@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9P2000.N -- Next-Generation 9P Protocol</title>
+<style>
+/* ================================================================
+   Slide Engine
+   ================================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0d1117;
+  --bg2:      #161b22;
+  --surface:  #1c2333;
+  --border:   #30363d;
+  --text:     #e6edf3;
+  --text2:    #8b949e;
+  --accent:   #00d4aa;
+  --accent2:  #00b4d8;
+  --blue:     #58a6ff;
+  --orange:   #f0883e;
+  --red:      #f85149;
+  --green:    #3fb950;
+  --purple:   #bc8cff;
+  --yellow:   #d29922;
+}
+
+html, body { height: 100%; font-family: 'Inter', 'SF Pro Display', system-ui, sans-serif; background: var(--bg); color: var(--text); }
+
+body { overflow: hidden; }
+
+.deck { position: relative; width: 100vw; height: 100vh; }
+
+.slide {
+  position: absolute; inset: 0;
+  display: none; flex-direction: column;
+  padding: 60px 80px;
+  opacity: 0; transition: opacity 0.4s;
+}
+.slide.active { display: flex; opacity: 1; }
+
+/* ================================================================
+   Typography
+   ================================================================ */
+h1 { font-size: 3rem; font-weight: 800; line-height: 1.15; letter-spacing: -1px; }
+h2 { font-size: 2.2rem; font-weight: 700; line-height: 1.2; margin-bottom: 32px; }
+h3 { font-size: 1.4rem; font-weight: 600; color: var(--accent); margin-bottom: 16px; }
+p, li { font-size: 1.15rem; line-height: 1.7; color: var(--text); }
+li { margin-bottom: 8px; }
+ul { padding-left: 24px; }
+code, pre { font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace; }
+code { background: var(--surface); padding: 2px 8px; border-radius: 4px; font-size: 0.95em; color: var(--accent); }
+pre {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px 24px; font-size: 0.85rem; line-height: 1.6;
+  overflow-x: auto; white-space: pre; color: var(--text2);
+}
+.accent { color: var(--accent); }
+.blue { color: var(--blue); }
+.orange { color: var(--orange); }
+.green { color: var(--green); }
+.purple { color: var(--purple); }
+.red { color: var(--red); }
+.dim { color: var(--text2); }
+.small { font-size: 0.9rem; }
+.big { font-size: 1.8rem; font-weight: 700; }
+strong { color: var(--accent); font-weight: 700; }
+
+/* ================================================================
+   Layout helpers
+   ================================================================ */
+.center { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
+.cols { display: flex; gap: 40px; flex: 1; align-items: flex-start; }
+.cols > * { flex: 1; }
+.grow { flex: 1; }
+.gap-sm { gap: 12px; }
+.gap-md { gap: 24px; }
+.mt { margin-top: 24px; }
+.mt-lg { margin-top: 40px; }
+.mb { margin-bottom: 16px; }
+
+/* ================================================================
+   Cards & boxes
+   ================================================================ */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px 28px;
+}
+.card h3 { margin-bottom: 12px; }
+.stat-row { display: flex; gap: 24px; margin-top: 24px; }
+.stat { text-align: center; flex: 1; }
+.stat .num { font-size: 2.8rem; font-weight: 800; color: var(--accent); }
+.stat .label { font-size: 0.9rem; color: var(--text2); margin-top: 4px; }
+
+/* ================================================================
+   Tables
+   ================================================================ */
+table { width: 100%; border-collapse: collapse; font-size: 1rem; }
+th { text-align: left; padding: 10px 16px; background: var(--surface); color: var(--accent); font-weight: 600; border-bottom: 2px solid var(--border); }
+td { padding: 10px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+tr:last-child td { border-bottom: none; }
+
+/* ================================================================
+   Flow diagrams (ASCII art)
+   ================================================================ */
+.flow {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px 32px; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.82rem; line-height: 1.55; white-space: pre; overflow-x: auto;
+  color: var(--text2);
+}
+.flow .hl { color: var(--accent); font-weight: 700; }
+.flow .bl { color: var(--blue); }
+.flow .og { color: var(--orange); }
+
+/* ================================================================
+   Navigation
+   ================================================================ */
+.nav {
+  position: fixed; bottom: 20px; right: 30px; z-index: 100;
+  display: flex; gap: 8px; align-items: center;
+}
+.nav button {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text2); font-size: 1rem; padding: 8px 14px; cursor: pointer;
+  transition: all 0.2s;
+}
+.nav button:hover { background: var(--border); color: var(--text); }
+.nav .counter { color: var(--text2); font-size: 0.85rem; font-family: monospace; min-width: 60px; text-align: center; }
+
+/* ================================================================
+   Progress bar
+   ================================================================ */
+.progress { position: fixed; top: 0; left: 0; height: 3px; background: var(--accent); z-index: 200; transition: width 0.3s; }
+
+/* ================================================================
+   Grid for domains
+   ================================================================ */
+.domain-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; }
+.domain-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 16px 20px;
+}
+.domain-card .icon { font-size: 1.4rem; margin-bottom: 6px; }
+.domain-card .name { font-weight: 700; font-size: 1rem; color: var(--accent); }
+.domain-card .desc { font-size: 0.85rem; color: var(--text2); margin-top: 4px; }
+
+/* ================================================================
+   Title slide special
+   ================================================================ */
+.slide.title-slide {
+  background: radial-gradient(ellipse at 30% 50%, #0a2a3f 0%, var(--bg) 70%);
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.title-slide h1 { font-size: 4rem; margin-bottom: 16px; }
+.slide.title-slide .subtitle { font-size: 1.5rem; color: var(--text2); margin-bottom: 40px; }
+.slide.title-slide .meta { font-size: 1rem; color: var(--text2); }
+
+/* ================================================================
+   Section divider
+   ================================================================ */
+.slide.section {
+  background: linear-gradient(135deg, #0a2a3f 0%, var(--bg) 100%);
+  justify-content: center; align-items: center; text-align: center;
+}
+.slide.section h1 { font-size: 3.2rem; }
+.slide.section .num { font-size: 6rem; font-weight: 900; color: var(--accent); opacity: 0.15; position: absolute; top: 40px; right: 80px; }
+
+/* Comparison table styling */
+.cmp-table td:first-child { font-weight: 600; white-space: nowrap; }
+.cmp-table .yes { color: var(--green); }
+.cmp-table .no { color: var(--text2); }
+.cmp-table .new { color: var(--accent); font-weight: 700; }
+
+/* Wire diagram styling */
+.wire { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; line-height: 1.4; }
+
+@media (max-width: 1200px) {
+  .slide { padding: 40px 48px; }
+  h1 { font-size: 2.4rem; }
+  h2 { font-size: 1.8rem; }
+  .domain-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+
+<div class="deck" id="deck">
+
+<!-- ============================================================
+     SLIDE 1: Title
+     ============================================================ -->
+<div class="slide title-slide active">
+  <svg width="120" height="120" viewBox="0 0 512 512" style="margin-bottom:32px">
+    <defs><linearGradient id="g1" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0F2B46"/><stop offset="100%" stop-color="#1A4A6E"/></linearGradient><linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00D4AA"/><stop offset="100%" stop-color="#00B4D8"/></linearGradient></defs>
+    <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#g1)"/>
+    <circle cx="256" cy="240" r="155" fill="none" stroke="#00D4AA" stroke-opacity="0.12" stroke-width="24"/>
+    <circle cx="256" cy="85" r="8" fill="#00D4AA" opacity="0.7"/><circle cx="391" cy="163" r="8" fill="#00CCBB" opacity="0.6"/><circle cx="391" cy="317" r="8" fill="#00C4CC" opacity="0.6"/><circle cx="256" cy="395" r="8" fill="#00BBDD" opacity="0.6"/><circle cx="121" cy="317" r="8" fill="#00B0E8" opacity="0.5"/><circle cx="101" cy="240" r="8" fill="#00A5F0" opacity="0.5"/><circle cx="121" cy="163" r="8" fill="#009AF5" opacity="0.5"/><circle cx="201" cy="95" r="8" fill="#0090FA" opacity="0.5"/>
+    <text x="254" y="258" text-anchor="middle" font-family="Inter,Helvetica,sans-serif" font-size="120" font-weight="800" fill="white">9P</text>
+    <rect x="311" y="270" width="72" height="40" rx="20" fill="url(#g2)" opacity="0.95"/><text x="347" y="298" text-anchor="middle" font-family="Inter,sans-serif" font-size="28" font-weight="700" fill="#0F2B46">.N</text>
+  </svg>
+  <h1>9P2000.N</h1>
+  <div class="subtitle">Next-Generation Modular 9P Protocol Extensions</div>
+</div>
+
+<!-- ============================================================
+     SLIDE 2: Agenda
+     ============================================================ -->
+<div class="slide">
+  <h2>Agenda</h2>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center;">
+    <ol style="font-size:1.3rem;line-height:2.2;padding-left:32px;">
+      <li>9P Protocol Background</li>
+      <li>Why We Need 9P2000.N</li>
+      <li>Design Philosophy &amp; Architecture</li>
+      <li>9 Extension Domains</li>
+      <li>Key Innovations: Compound Ops, Server Push, Leases</li>
+      <li>SPIFFE Identity Integration</li>
+      <li>End-to-End Communication Scenarios</li>
+      <li>Comparison with Existing Variants</li>
+      <li>Roadmap &amp; How to Contribute</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 3: What is 9P?
+     ============================================================ -->
+<div class="slide">
+  <h2>9P: The "Everything is a File" Network Protocol</h2>
+  <div class="cols">
+    <div>
+      <h3>Origins</h3>
+      <ul>
+        <li>Born in the <strong>Plan 9</strong> operating system (Bell Labs, 1990s)</li>
+        <li>Core philosophy: <em>"Every resource is a file, accessed via a file protocol"</em></li>
+        <li>Minimalist design: only <strong>14 message pairs</strong> cover all file operations</li>
+      </ul>
+      <h3 class="mt">Role in Linux</h3>
+      <ul>
+        <li>Built-in v9fs kernel client (<code>CONFIG_9P_FS</code>)</li>
+        <li>QEMU/KVM virtio-9p host file sharing</li>
+        <li>WSL2 Windows &harr; Linux filesystem bridge</li>
+        <li>Chrome OS (crostini) container file access</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Protocol Evolution</h3>
+      <div class="card" style="margin-bottom:16px;">
+        <span class="accent">9P2000</span> <span class="dim">(2002)</span><br>
+        14 message pairs &middot; basic file ops &middot; pure Plan 9
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <span class="accent">9P2000.u</span> <span class="dim">(Unix extension)</span><br>
+        +uid/gid &middot; +errno &middot; +symlink/device &middot; no new message types
+      </div>
+      <div class="card" style="margin-bottom:16px;">
+        <span class="accent">9P2000.L</span> <span class="dim">(Linux extension)</span><br>
+        +25 message pairs &middot; getattr/setattr &middot; readdir &middot; lock &middot; xattr
+      </div>
+      <div class="card" style="border-color:var(--accent);">
+        <span class="accent" style="font-size:1.1em;">9P2000.N</span> <span class="dim">(Next)</span><br>
+        <strong>+46 message pairs</strong> &middot; modular capability negotiation &middot; server push &middot; SPIFFE
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 4: Why 9P2000.N - Problems
+     ============================================================ -->
+<div class="slide">
+  <h2>Why Do We Need 9P2000.N?</h2>
+  <div class="cols">
+    <div>
+      <h3 class="red">Current Pain Points</h3>
+      <div class="card mb">
+        <strong class="red">Inflexible Negotiation</strong>
+        <p class="small dim">Version negotiation is a single string &mdash; all or nothing. No way to pick and choose features.</p>
+      </div>
+      <div class="card mb">
+        <strong class="red">No Secure Channel</strong>
+        <p class="small dim">No built-in encryption. P9any authentication is vulnerable to MITM. No modern identity system.</p>
+      </div>
+      <div class="card mb">
+        <strong class="red">One Round-Trip Per Operation</strong>
+        <p class="small dim">Reading a small file requires walk + open + read + clunk = 4 RTTs.</p>
+      </div>
+      <div class="card mb">
+        <strong class="red">No Change Notifications</strong>
+        <p class="small dim">Clients can only poll. No inotify/fanotify equivalent. No cache coherence guarantees.</p>
+      </div>
+    </div>
+    <div>
+      <h3 class="green">9P2000.N Solutions</h3>
+      <div class="card mb">
+        <strong class="green">Modular Capability Negotiation</strong>
+        <p class="small dim"><code>Tcaps/Rcaps</code> lets you pick from 28+ independent capabilities. No all-or-nothing tradeoff.</p>
+      </div>
+      <div class="card mb">
+        <strong class="green">STARTTLS + SPIFFE</strong>
+        <p class="small dim">Protocol-level TLS binding. X.509-SVID and JWT-SVID workload identity support.</p>
+      </div>
+      <div class="card mb">
+        <strong class="green">Compound Operations</strong>
+        <p class="small dim"><code>Tcompound</code> packs N operations into a single round-trip. Eliminates N-1 RTTs.</p>
+      </div>
+      <div class="card mb">
+        <strong class="green">Server Push + Leases</strong>
+        <p class="small dim"><code>Rnotify</code> for real-time notifications. <code>Tlease</code> for cache delegations. Safe client-side caching.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 5: Design Philosophy
+     ============================================================ -->
+<div class="slide">
+  <h2>Design Philosophy</h2>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center;">
+    <div class="cols">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:8px;">&#x1F4E6;</div>
+        <h3>Wire Format Preserved</h3>
+        <pre style="font-size:0.9rem;text-align:left;margin-top:12px;">size[4] type[1] tag[2] payload</pre>
+        <p class="small dim mt">The 7-byte header is kept intact. All existing parsers can skip unknown message types.</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:8px;">&#x1F9E9;</div>
+        <h3>Composable</h3>
+        <p class="small dim mt">28 capabilities negotiated independently. A server can implement <code>fs.watch</code> without needing <code>dist.lease</code>.</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:8px;">&#x2B07;&#xFE0F;</div>
+        <h3>Graceful Fallback</h3>
+        <p class="small dim mt">Server doesn't support <code>9P2000.N</code>? Automatic fallback to <code>9P2000.L</code> or lower. Zero disruption.</p>
+      </div>
+    </div>
+    <div class="cols mt-lg">
+      <div class="card" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:8px;">&#x2795;</div>
+        <h3>Purely Additive</h3>
+        <p class="small dim mt">No existing message semantics are modified. New messages only use previously unused type numbers.</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:8px;">&#x1F50A;</div>
+        <h3>Server Push</h3>
+        <p class="small dim mt">Uses <code>P9_NOTAG (0xFFFF)</code> for unsolicited server-to-client messages without changing the wire format.</p>
+      </div>
+      <div class="card" style="text-align:center;">
+        <div style="font-size:2.5rem;margin-bottom:8px;">&#x1F5FA;&#xFE0F;</div>
+        <h3>Maps to Existing Semantics</h3>
+        <p class="small dim mt"><code>Tallocate</code> = <code>fallocate(2)</code>, <code>Twatch</code> = <code>inotify</code>, <code>Tlease</code> = NFS4 delegation.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 6: Architecture - 9 Domains
+     ============================================================ -->
+<div class="slide">
+  <h2>9 Extension Domains</h2>
+  <div class="domain-grid grow">
+    <div class="domain-card">
+      <div class="name">Negotiation</div>
+      <div class="desc">Tcaps/Rcaps capability negotiation framework. Foundation for all extensions.</div>
+      <div class="small dim mt">type 128-129</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">security.*</div>
+      <div class="desc">TLS channel, auth negotiation, capability tokens, audit, SPIFFE identity</div>
+      <div class="small dim mt">type 130-145 &middot; 8 pairs</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">perf.*</div>
+      <div class="desc">Compound ops, compression, zero-copy, server-side copy, sparse files</div>
+      <div class="small dim mt">type 156-167 &middot; 6 pairs</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">fs.*</div>
+      <div class="desc">Watch/notify, ACLs, snapshots/clones, first-class xattr</div>
+      <div class="small dim mt">type 180-199 &middot; 10 pairs</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">dist.*</div>
+      <div class="desc">Leases/delegations, session resumption, consistency levels, topology</div>
+      <div class="small dim mt">type 200-213 &middot; 7 pairs</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">obs.*</div>
+      <div class="desc">Distributed tracing (OpenTelemetry), health checks, server stats</div>
+      <div class="small dim mt">type 220-225 &middot; 3 pairs</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">res.*</div>
+      <div class="desc">Quota management, rate limiting (multi-tenant scenarios)</div>
+      <div class="small dim mt">type 230-235 &middot; 3 pairs</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">stream.*</div>
+      <div class="desc">Async operation wrappers, streaming read/write (breaks sync RTT barrier)</div>
+      <div class="small dim mt">type 240-249 &middot; 5 pairs</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">content.*</div>
+      <div class="desc">Server-side search, content hashing / integrity verification</div>
+      <div class="small dim mt">type 250-253 &middot; 2 pairs</div>
+    </div>
+    <div class="domain-card">
+      <div class="name">transport.*</div>
+      <div class="desc">Transport negotiation: QUIC multistream, RDMA memory tokens, CXL shared memory mapping</div>
+      <div class="small dim mt">type 146-155 &middot; 5 pairs</div>
+    </div>
+  </div>
+  <div class="stat-row">
+    <div class="stat"><div class="num">51</div><div class="label">Message Type Pairs</div></div>
+    <div class="stat"><div class="num">102</div><div class="label">Type Slots Used</div></div>
+    <div class="stat"><div class="num">96</div><div class="label">Reserved for Future</div></div>
+    <div class="stat"><div class="num">10</div><div class="label">Extension Domains</div></div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 7: Key Innovation 1 - Capability Negotiation
+     ============================================================ -->
+<div class="slide">
+  <h2>Key Innovation 1: Capability Negotiation</h2>
+  <div class="cols">
+    <div>
+      <h3>Old Way vs. New Way</h3>
+      <div class="card mb">
+        <p class="small"><span class="red">9P2000.L (old)</span>: Client sends <code>"9P2000.L"</code>, server either fully supports it or downgrades.</p>
+      </div>
+      <div class="card" style="border-color:var(--accent);">
+        <p class="small"><span class="green">9P2000.N (new)</span>: After version handshake, <code>Tcaps</code> lists desired capabilities; server returns the supported subset.</p>
+      </div>
+      <h3 class="mt-lg">Tcaps Wire Format</h3>
+      <pre class="wire"> 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             size                              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  type = 128   |              tag              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|            ncaps              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|         cap[0] (string)                     ...
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+    </div>
+    <div>
+      <h3>Negotiation Flow</h3>
+      <div class="flow"><span class="hl">Client</span>                              <span class="hl">Server</span>
+  |                                     |
+  |-- Tversion <span class="bl">"9P2000.N"</span> msize ----->|
+  |<- Rversion <span class="bl">"9P2000.N"</span> msize -----|
+  |                                     |
+  |-- Tcaps --------------------------->|
+  |   [<span class="og">"security.tls"</span>,                |
+  |    <span class="og">"perf.compound"</span>,               |
+  |    <span class="og">"fs.watch"</span>,                    |
+  |    <span class="og">"dist.lease"</span>]                  |
+  |                                     |
+  |<- Rcaps ----------------------------|
+  |   [<span class="hl">"perf.compound"</span>,               |
+  |    <span class="hl">"fs.watch"</span>]                    |
+  |                                     |
+  |   <span class="dim">(Both sides now know the active set)</span></div>
+      <p class="small dim mt">Server returns only its supported subset. Client uses only the intersection. Unknown capability strings are ignored.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 8: Key Innovation 2 - Compound Operations
+     ============================================================ -->
+<div class="slide">
+  <h2>Key Innovation 2: Compound Operations (Tcompound)</h2>
+  <div class="cols">
+    <div>
+      <h3>Problem: Reading a File Takes 4 RTTs</h3>
+      <div class="flow" style="font-size:0.78rem;"><span class="red">Old way (9P2000.L):</span>
+  Client           Server
+    |-- Twalk ------->|   RTT 1
+    |<- Rwalk --------|
+    |-- Tlopen ------>|   RTT 2
+    |<- Rlopen -------|
+    |-- Tread ------->|   RTT 3
+    |<- Rread --------|
+    |-- Tclunk ------>|   RTT 4
+    |<- Rclunk -------|
+
+  <span class="dim">Total: 4 RTTs</span></div>
+      <h3 class="mt">Solution: 1 RTT</h3>
+      <div class="flow" style="font-size:0.78rem;"><span class="hl">New way (9P2000.N):</span>
+  Client                  Server
+    |-- Tcompound -------->|  RTT 1
+    |   [Twalk,            |
+    |    Tlopen(PREVFID),  |
+    |    Tread(PREVFID),   |
+    |    Tclunk(PREVFID)]  |
+    |<- Rcompound ---------|
+    |   [Rwalk, Rlopen,    |
+    |    Rread, Rclunk]    |
+
+  <span class="hl">Total: 1 RTT (75% reduction)</span></div>
+    </div>
+    <div>
+      <h3>Magic FID: <code>0xFFFFFFFE</code></h3>
+      <p>Sub-operations use <code>P9N_PREVFID</code> to reference the fid returned by the previous sub-op, without knowing the fid value in advance.</p>
+      <p class="small dim mt">Inspired by NFS4 COMPOUND's CURRENT_FH mechanism.</p>
+
+      <h3 class="mt-lg">Tcompound Wire Format</h3>
+      <pre class="wire"> 0                   1                   2                   3
+ 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                             size                              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  type = 156   |              tag              |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|            nops               |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|                       op[0].opsize                            |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+|  op[0].type   |    op[0].payload ...          |
++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+</pre>
+      <p class="small dim mt">Sub-ops have no tag field. opsize includes itself (4) + type (1) = 5 bytes minimum.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 9: Key Innovation 3 - Server Push & Leases
+     ============================================================ -->
+<div class="slide">
+  <h2>Key Innovation 3: Server Push &amp; Leases</h2>
+  <div class="cols">
+    <div>
+      <h3>Server Push Mechanism</h3>
+      <p>9P has <strong>never had</strong> server-initiated messages. 9P2000.N introduces this by reusing <code>P9_NOTAG (0xFFFF)</code>:</p>
+      <table class="mt" style="font-size:0.9rem;">
+        <tr><th>Message</th><th>Trigger</th></tr>
+        <tr><td><code class="accent">Rnotify</code></td><td>Watched file/directory changed</td></tr>
+        <tr><td><code class="accent">Rleasebreak</code></td><td>Server needs to downgrade/revoke a client's lease</td></tr>
+        <tr><td><code class="accent">Rstreamdata</code></td><td>Streaming read data arrived</td></tr>
+      </table>
+      <p class="small dim mt">Legacy clients that haven't negotiated push capabilities will never receive these messages. Fully backward compatible.</p>
+    </div>
+    <div>
+      <h3>Watch + Notify Flow</h3>
+      <div class="flow" style="font-size:0.78rem;">Client                            Server
+  |-- Twatch ----fid=dir-------->|
+  |   mask=CREATE|MODIFY         |
+  |   flags=RECURSIVE            |
+  |<- Rwatch ---watchid=42-------|
+  |                               |
+  |   <span class="dim">(... another client creates a file ...)</span>
+  |                               |
+  |<- <span class="hl">Rnotify</span>  <span class="og">tag=0xFFFF</span> ------|
+  |   watchid=42                  |
+  |   event=CREATE                |
+  |   name=<span class="bl">"newfile.txt"</span>         |
+  |   qid={type,ver,path}        |</div>
+
+      <h3 class="mt">Lease Flow</h3>
+      <div class="flow" style="font-size:0.78rem;">Client                            Server
+  |-- Tlease -fid=f, WRITE, 30s->|
+  |<- Rlease --leaseid=7---------|
+  |   <span class="dim">(client can safely cache writes)</span>  |
+  |                               |
+  |   <span class="dim">(another client requests same file...)</span>
+  |<- <span class="hl">Rleasebreak</span> <span class="og">tag=0xFFFF</span> ---|
+  |   leaseid=7, newtype=READ     |
+  |   <span class="dim">(client flushes dirty data)</span>      |
+  |-- Tleaseack --leaseid=7----->|
+  |<- Rleaseack ------------------|</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 10: SPIFFE Integration
+     ============================================================ -->
+<div class="slide">
+  <h2>SPIFFE Identity Integration</h2>
+  <div class="cols">
+    <div>
+      <h3>Why Integrate SPIFFE?</h3>
+      <ul>
+        <li>Workload identity is the security foundation in cloud-native environments</li>
+        <li>SPIFFE provides a standardized <strong>spiffe://</strong> URI identity system</li>
+        <li>X.509-SVID for mTLS, JWT-SVID for bearer tokens</li>
+        <li>Cross-trust-domain federation verification</li>
+      </ul>
+      <h3 class="mt">New Messages</h3>
+      <table style="font-size:0.85rem;">
+        <tr><th>Type</th><th>Message</th><th>Purpose</th></tr>
+        <tr><td>140/141</td><td><code>Tstartls_spiffe</code></td><td>mTLS handshake with SPIFFE IDs</td></tr>
+        <tr><td>142/143</td><td><code>Tfetchbundle</code></td><td>Fetch trust bundle (X.509 CA / JWK Set)</td></tr>
+        <tr><td>144/145</td><td><code>Tspiffeverify</code></td><td>Explicit SVID verification</td></tr>
+      </table>
+      <p class="small dim mt"><code>SPIFFE-X.509</code> and <code>SPIFFE-JWT</code> are first-class auth mechanisms in <code>Tauthneg</code>.</p>
+    </div>
+    <div>
+      <h3>SPIFFE Connection Flow</h3>
+      <div class="flow" style="font-size:0.72rem;"><span class="hl">Client</span>                                <span class="hl">Server</span>
+  |                                       |
+  |-- Tversion <span class="bl">"9P2000.N"</span> msize -------->|
+  |<- Rversion <span class="bl">"9P2000.N"</span> msize ---------|
+  |                                       |
+  |-- Tcaps [<span class="og">security.spiffe</span>, ...] ----->|
+  |<- Rcaps [<span class="og">security.spiffe</span>, ...] ------|
+  |                                       |
+  |-- Tfetchbundle <span class="bl">"example.com"</span> 0 ----->|
+  |<- Rfetchbundle PEM CA chain ----------|
+  |                                       |
+  |-- Tstartls_spiffe ------------------->|
+  |   id=<span class="og">"spiffe://a.com/client"</span>        |
+  |   domain=<span class="og">"a.com"</span>                     |
+  |<- Rstartls_spiffe --------------------|
+  |   id=<span class="og">"spiffe://b.com/server"</span>        |
+  |   domain=<span class="og">"b.com"</span>                     |
+  |       <span class="hl"><<< mTLS with X.509-SVIDs >>></span> |
+  |                                       |
+  |-- Tauthneg [<span class="bl">"SPIFFE-X.509"</span>] -------->|
+  |<- Rauthneg <span class="bl">"SPIFFE-X.509"</span> ----------|
+  |-- Tattach --------------------------->|
+  |<- Rattach -----------------------------|</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 11: Scenario 1 - File Read
+     ============================================================ -->
+<div class="slide">
+  <h2>Scenario 1: Efficient Cached File Read</h2>
+  <p class="dim mb">Scenario: Client reads <code>/data/config.yaml</code> and caches the content using compound + lease.</p>
+  <div class="flow" style="font-size:0.75rem;flex:1;"><span class="hl">Client</span>                                         <span class="hl">Server</span>
+  |                                                  |
+  |  <span class="dim">--- Phase 1: Version & capability negotiation ---</span>
+  |-- Tversion "9P2000.N" msize=65536 ------------>|
+  |<- Rversion "9P2000.N" msize=65536 -------------|
+  |-- Tcaps [perf.compound, dist.lease] ---------->|
+  |<- Rcaps [perf.compound, dist.lease] -----------|
+  |                                                  |
+  |  <span class="dim">--- Phase 2: walk+open+read+clunk in 1 RTT ---</span>  |
+  |-- <span class="hl">Tcompound</span> tag=1 ------------------------------>|
+  |     sub-op 0: Twalk  fid=root newfid=<span class="og">PREVFID</span>    |
+  |               wnames=["data", "config.yaml"]     |
+  |     sub-op 1: Tlopen fid=<span class="og">PREVFID</span> flags=RDONLY   |
+  |     sub-op 2: Tread  fid=<span class="og">PREVFID</span> off=0 cnt=64K  |
+  |     sub-op 3: Tclunk fid=<span class="og">PREVFID</span>               |
+  |<- <span class="hl">Rcompound</span> tag=1 -------------------------------|
+  |     [Rwalk(qids), Rlopen(qid,iounit),            |
+  |      Rread(data...), Rclunk]                      |
+  |                                                  |
+  |  <span class="dim">--- Phase 3: Acquire read lease for caching ---</span>  |
+  |-- Tlease fid=root/data/config.yaml <span class="bl">READ</span> 60s -->|
+  |<- Rlease leaseid=5 type=READ duration=60 ------|
+  |                                                  |
+  |  <span class="hl">(Client can now safely read from local cache)</span>    |
+  |  <span class="hl">(If another client modifies the file, server</span>     |
+  |  <span class="hl"> sends Rleasebreak to invalidate the cache)</span>     |</div>
+</div>
+
+<!-- ============================================================
+     SLIDE 12: Scenario 2 - Real-time Monitoring
+     ============================================================ -->
+<div class="slide">
+  <h2>Scenario 2: Real-Time Directory Monitoring</h2>
+  <p class="dim mb">Scenario: Monitor <code>/var/spool/jobs/</code> for new files and process them immediately.</p>
+  <div class="cols">
+    <div class="flow" style="font-size:0.73rem;flex:1;"><span class="hl">Client</span>                             <span class="hl">Server</span>
+  |                                      |
+  |  <span class="dim">(version/caps/attach completed)</span>     |
+  |                                      |
+  |-- Twalk root -> /var/spool/jobs ---->|
+  |<- Rwalk qids[] ----------------------|
+  |                                      |
+  |-- Twatch fid=jobs_dir            --->|
+  |   mask=<span class="og">CREATE</span>                       |
+  |   flags=0                            |
+  |<- Rwatch watchid=<span class="bl">17</span> ----------------|
+  |                                      |
+  |  <span class="dim">(... waiting for events ...)</span>       |
+  |                                      |
+  |  <span class="dim">(a user submits a new job)</span>         |
+  |<- <span class="hl">Rnotify</span> <span class="og">tag=0xFFFF</span>               |
+  |   watchid=<span class="bl">17</span>                        |
+  |   event=CREATE                       |
+  |   name=<span class="bl">"job-20260331-001.json"</span>     |
+  |   qid={FILE, ver=1, path=...}        |
+  |                                      |
+  |-- <span class="hl">Tcompound</span> [walk+lopen+read] ---->|
+  |<- <span class="hl">Rcompound</span> [results] --------------|
+  |   <span class="dim">(processing new job...)</span>           |
+  |                                      |
+  |  <span class="dim">(more events keep arriving...)</span>     |
+  |<- <span class="hl">Rnotify</span> <span class="og">tag=0xFFFF</span>               |
+  |   name=<span class="bl">"job-20260331-002.json"</span>     |</div>
+    <div style="flex:0.7;">
+      <h3>Key Points</h3>
+      <div class="card mb">
+        <p class="small"><strong>Zero Polling</strong>: Client doesn't need to loop on readdir. Server pushes events proactively.</p>
+      </div>
+      <div class="card mb">
+        <p class="small"><strong>Efficient Processing</strong>: After notification, use Tcompound for single-RTT file read.</p>
+      </div>
+      <div class="card mb">
+        <p class="small"><strong>Selective Listening</strong>: Mask can focus on CREATE only, ignoring MODIFY/REMOVE, etc.</p>
+      </div>
+      <div class="card">
+        <p class="small"><strong>Recursive Option</strong>: Set <code>flags=RECURSIVE</code> to monitor entire subtree.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 13: Scenario 3 - Server-Side Copy
+     ============================================================ -->
+<div class="slide">
+  <h2>Scenario 3: Server-Side Zero-Transfer File Copy</h2>
+  <p class="dim mb">Scenario: Copy a 10GB file on the same server without downloading and re-uploading.</p>
+  <div class="cols">
+    <div>
+      <div class="flow" style="font-size:0.75rem;"><span class="hl">Client</span>                              <span class="hl">Server</span>
+  |                                       |
+  |  <span class="dim">(walk & open source file)</span>          |
+  |-- Tcompound [walk+lopen] ----------->|
+  |<- Rcompound [srcfid=10] -------------|
+  |                                       |
+  |  <span class="dim">(walk & create destination file)</span>   |
+  |-- Tcompound [walk+lcreate] --------->|
+  |<- Rcompound [dstfid=11] -------------|
+  |                                       |
+  |  <span class="dim">(server-side copy: zero network I/O)</span>|
+  |-- <span class="hl">Tcopyrange</span> ----------------------->|
+  |   srcfid=10  srcoff=0                 |
+  |   dstfid=11  dstoff=0                 |
+  |   count=10737418240 <span class="dim">(10GB)</span>          |
+  |   flags=<span class="og">REFLINK</span> <span class="dim">(CoW if possible)</span>  |
+  |                                       |
+  |<- <span class="hl">Rcopyrange</span> ------------------------|
+  |   count=10737418240                   |
+  |                                       |
+  |  <span class="hl">10GB copy done, zero bytes over the wire!</span></div>
+    </div>
+    <div>
+      <h3>Why This Matters</h3>
+      <div class="card mb">
+        <p><strong class="red">Old Way</strong></p>
+        <p class="small dim">Client must read 10GB, then write 10GB back.<br>Total transfer: <span class="red">20GB</span>, limited by network bandwidth.</p>
+      </div>
+      <div class="card">
+        <p><strong class="green">Tcopyrange</strong></p>
+        <p class="small dim">A single message triggers server-internal copy.<br>Total transfer: <span class="green">~50 bytes</span> (1 request + 1 response).</p>
+      </div>
+
+      <h3 class="mt-lg">Supported Modes</h3>
+      <table style="font-size:0.9rem;">
+        <tr><th>Flag</th><th>Behavior</th></tr>
+        <tr><td><code>0x0</code></td><td>Full data copy</td></tr>
+        <tr><td><code class="accent">REFLINK (0x1)</code></td><td>CoW reference link (btrfs/ZFS)</td></tr>
+        <tr><td><code>DEDUP (0x2)</code></td><td>Deduplication hint</td></tr>
+      </table>
+      <p class="small dim mt">Maps to Linux <code>copy_file_range(2)</code> / <code>FICLONE</code>.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 14: Transport Profiles
+     ============================================================ -->
+<div class="slide">
+  <h2>Multi-Transport Support</h2>
+  <p class="dim mb">One protocol, multiple transports &mdash; <code>Tcaps</code> auto-negotiates the optimal path</p>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center;">
+    <table style="font-size:0.88rem;">
+      <tr>
+        <th>Dimension</th><th>TCP+TLS</th><th>QUIC</th><th>RDMA</th><th style="color:var(--accent)">CXL</th>
+      </tr>
+      <tr><td>Typical latency</td><td>~1 ms</td><td>~1 ms</td><td>~1-5 μs</td><td class="new">~100 ns</td></tr>
+      <tr><td>Data path</td><td>kernel copy</td><td>userspace copy</td><td>NIC DMA</td><td class="new">CPU load/store</td></tr>
+      <tr><td>Encryption</td><td>TLS (explicit)</td><td>TLS 1.3 (built-in)</td><td>none (needs IPsec)</td><td>none (physical)</td></tr>
+      <tr><td>Zero-copy</td><td class="no">no</td><td class="no">no</td><td class="yes">RDMA verbs</td><td class="yes">direct memory</td></tr>
+      <tr><td>Cache coherence</td><td>software lease</td><td>software lease</td><td>software lease</td><td class="new">hardware CXL.cache</td></tr>
+      <tr><td>Tread/Twrite</td><td>inline in msg</td><td>inline in msg</td><td>RDMA R/W</td><td class="new">not needed (memory)</td></tr>
+      <tr><td>Server push</td><td>P9_NOTAG</td><td>dedicated stream</td><td>Write+Imm ring</td><td>doorbell + ring</td></tr>
+      <tr><td>Best for</td><td>general/WAN</td><td>mobile/edge</td><td>HPC/datacenter</td><td class="new">shared memory pool</td></tr>
+    </table>
+    <div class="flow mt" style="font-size:0.72rem;">                     9P2000.N Server
+                    ┌───────────────┐
+  WAN client ──────┤ TCP+TLS       │
+                   │               │
+  Mobile app ──────┤ QUIC          │──── Storage
+                   │               │     Backend
+  HPC node ────────┤ RDMA          │
+                   │               │
+  GPU server ──────┤ CXL           │
+                   └───────────────┘</div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 15: Comparison
+     ============================================================ -->
+<div class="slide">
+  <h2>Comparison with Existing 9P Variants</h2>
+  <div class="grow" style="display:flex;flex-direction:column;justify-content:center;">
+    <table class="cmp-table" style="font-size:0.95rem;">
+      <tr>
+        <th>Feature</th><th>9P2000</th><th>9P2000.u</th><th>9P2000.L</th><th style="color:var(--accent)">9P2000.N</th>
+      </tr>
+      <tr><td>Message type pairs</td><td>14</td><td>14</td><td>~25</td><td class="new">51</td></tr>
+      <tr><td>Feature negotiation</td><td class="no">single string</td><td class="no">single string</td><td class="no">single string</td><td class="new">modular caps</td></tr>
+      <tr><td>Server push</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">P9_NOTAG</td></tr>
+      <tr><td>Encryption</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">STARTTLS</td></tr>
+      <tr><td>Cache coherence</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">lease/delegation</td></tr>
+      <tr><td>Workload identity</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">SPIFFE</td></tr>
+      <tr><td>Compound operations</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">Tcompound</td></tr>
+      <tr><td>Change notifications</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">watch/notify</td></tr>
+      <tr><td>Compression</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">lz4/zstd/snappy</td></tr>
+      <tr><td>Server-side copy</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">copy_file_range</td></tr>
+      <tr><td>Quota &amp; rate limit</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">quota/ratelimit</td></tr>
+      <tr><td>Async operations</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">async/poll</td></tr>
+      <tr><td>QUIC transport</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">multistream/0-RTT/migration</td></tr>
+      <tr><td>RDMA zero-copy</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">memory tokens/notify ring</td></tr>
+      <tr><td>CXL memory semantic</td><td class="no">--</td><td class="no">--</td><td class="no">--</td><td class="yes">load/store + hw coherence</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 16: Implementation Status
+     ============================================================ -->
+<div class="slide">
+  <h2>Implementation Status</h2>
+  <div class="cols">
+    <div>
+      <h3>Completed (Phase 1)</h3>
+      <ul>
+        <li class="green">Protocol header <code>9pN.h</code> &mdash; all 51 message pairs</li>
+        <li class="green">Buffer primitives <code>buf.c</code> &mdash; LE encoding/decoding</li>
+        <li class="green">Capability negotiation <code>caps.c</code> &mdash; bitmask fast path</li>
+        <li class="green">C / Go / Rust reference implementations</li>
+        <li class="green">Compound operation builder <code>compound.c</code></li>
+        <li class="green">SPIFFE integration &mdash; 3 new message pairs</li>
+        <li class="green">131 unit tests (C:45 + Go:42 + Rust:44)</li>
+        <li class="green">RFC-style specification document</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Roadmap</h3>
+      <div class="card mb">
+        <h3>Phase 2 &mdash; Transport &amp; Performance</h3>
+        <p class="small dim">QUIC/RDMA/CXL transport integration<br>Compression, zero-copy, server-side copy<br>Distributed tracing, health checks</p>
+      </div>
+      <div class="card mb">
+        <h3>Phase 3 &mdash; Advanced Features</h3>
+        <p class="small dim">Snapshots/clones, streaming I/O, search<br>Cross-domain SPIFFE federation<br>Linux kernel module (v9fs extension)</p>
+      </div>
+      <div class="card">
+        <h3>Phase 4 &mdash; Ecosystem</h3>
+        <p class="small dim">Go / Rust / Python client libraries<br>FUSE userspace filesystem<br>QEMU virtio-9p-next patches</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     SLIDE 17: Get Involved
+     ============================================================ -->
+<div class="slide center" style="background: radial-gradient(ellipse at 50% 50%, #0a2a3f 0%, var(--bg) 70%);">
+  <svg width="100" height="100" viewBox="0 0 512 512" style="margin-bottom:24px">
+    <defs><linearGradient id="g3" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#0F2B46"/><stop offset="100%" stop-color="#1A4A6E"/></linearGradient><linearGradient id="g4" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#00D4AA"/><stop offset="100%" stop-color="#00B4D8"/></linearGradient></defs>
+    <rect x="16" y="16" width="480" height="480" rx="96" fill="url(#g3)"/>
+    <text x="254" y="258" text-anchor="middle" font-family="Inter,Helvetica,sans-serif" font-size="120" font-weight="800" fill="white">9P</text>
+    <rect x="311" y="270" width="72" height="40" rx="20" fill="url(#g4)" opacity="0.95"/><text x="347" y="298" text-anchor="middle" font-family="Inter,sans-serif" font-size="28" font-weight="700" fill="#0F2B46">.N</text>
+  </svg>
+  <h1 style="font-size:3rem;margin-bottom:24px;">Thanks! Questions?</h1>
+  <p style="font-size:1.3rem;color:var(--text2);margin-bottom:40px;">MIT License &middot; Contributions Welcome</p>
+  <div style="display:flex;gap:40px;">
+    <div class="card" style="min-width:200px;">
+      <p class="small accent">Source Code</p>
+      <p class="small dim">github.com/9p2000n</p>
+    </div>
+    <div class="card" style="min-width:200px;">
+      <p class="small accent">Specification</p>
+      <p class="small dim">spec/9P2000.N-protocol.md</p>
+    </div>
+    <div class="card" style="min-width:200px;">
+      <p class="small accent">Wire Format</p>
+      <p class="small dim">spec/9P2000.N-protocol-format.md</p>
+    </div>
+  </div>
+</div>
+
+</div><!-- /deck -->
+
+<!-- ============================================================
+     Navigation
+     ============================================================ -->
+<div class="nav">
+  <button onclick="prev()" title="Previous (Left Arrow)">&larr;</button>
+  <div class="counter" id="counter">1 / 17</div>
+  <button onclick="next()" title="Next (Right Arrow)">&rarr;</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const counter = document.getElementById('counter');
+const progress = document.getElementById('progress');
+let cur = 0;
+
+function show(n) {
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(n, slides.length - 1));
+  slides[cur].classList.add('active');
+  counter.textContent = `${cur + 1} / ${slides.length}`;
+  progress.style.width = `${((cur + 1) / slides.length) * 100}%`;
+}
+
+function next() { show(cur + 1); }
+function prev() { show(cur - 1); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+  if (e.key === 'Home') { e.preventDefault(); show(0); }
+  if (e.key === 'End') { e.preventDefault(); show(slides.length - 1); }
+});
+
+// Touch support
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); }
+});
+
+show(0);
+</script>
+</body>
+</html>

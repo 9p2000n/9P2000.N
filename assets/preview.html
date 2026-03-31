@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>9P2000.N Icon Preview</title>
+<style>
+body { background: #1a1a2e; color: #eee; font-family: system-ui; display: flex; flex-direction: column; align-items: center; padding: 40px; gap: 30px; }
+h1 { color: #00D4AA; }
+.grid { display: flex; gap: 30px; align-items: end; flex-wrap: wrap; justify-content: center; }
+.item { text-align: center; }
+.item span { display: block; margin-top: 8px; font-size: 14px; color: #888; }
+img { image-rendering: auto; }
+</style>
+</head>
+<body>
+<h1>9P2000.N Icon</h1>
+<div class="grid">
+  <div class="item"><img src="9pN-icon.svg" width="512" height="512"><span>512px (main)</span></div>
+  <div class="item"><img src="9pN-icon.svg" width="256" height="256"><span>256px</span></div>
+  <div class="item"><img src="9pN-icon.svg" width="128" height="128"><span>128px</span></div>
+  <div class="item"><img src="9pN-icon.svg" width="64" height="64"><span>64px</span></div>
+  <div class="item"><img src="9pN-favicon.svg" width="32" height="32"><span>32px favicon</span></div>
+  <div class="item"><img src="9pN-favicon.svg" width="16" height="16"><span>16px favicon</span></div>
+</div>
+<h2>Usage</h2>
+<pre style="background:#0d1117;padding:20px;border-radius:8px;color:#c9d1d9;">
+&lt;!-- Website icon --&gt;
+&lt;link rel="icon" type="image/svg+xml" href="9pN-favicon.svg"&gt;
+
+&lt;!-- In page --&gt;
+&lt;img src="9pN-icon.svg" width="128" alt="9P2000.N"&gt;
+
+&lt;!-- PNG conversion (install librsvg2-bin) --&gt;
+rsvg-convert -w 512 -h 512 9pN-icon.svg -o 9pN-icon-512.png
+rsvg-convert -w 32 -h 32 9pN-favicon.svg -o favicon.png
+</pre>
+</body>
+</html>

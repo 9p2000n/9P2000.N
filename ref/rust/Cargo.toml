@@ -1,0 +1,8 @@
+[package]
+name = "p9n"
+version = "0.1.0"
+edition = "2021"
+description = "9P2000.N protocol reference implementation"
+license = "MIT"
+
+[dependencies]

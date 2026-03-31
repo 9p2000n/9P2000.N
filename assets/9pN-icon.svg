@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Main gradient: deep blue to teal -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F2B46"/>
+      <stop offset="50%" stop-color="#163B5C"/>
+      <stop offset="100%" stop-color="#1A4A6E"/>
+    </linearGradient>
+
+    <!-- Accent gradient: teal to cyan glow -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D4AA"/>
+      <stop offset="100%" stop-color="#00B4D8"/>
+    </linearGradient>
+
+    <!-- Ring gradient -->
+    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00D4AA" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#0096C7" stop-opacity="0.7"/>
+    </linearGradient>
+
+    <!-- Glow filter -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Subtle outer glow -->
+    <filter id="outerGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="8" result="blur"/>
+      <feFlood flood-color="#00D4AA" flood-opacity="0.3"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Node glow -->
+    <filter id="nodeGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background: rounded square -->
+  <rect x="16" y="16" width="480" height="480" rx="96" ry="96" fill="url(#bgGrad)"/>
+
+  <!-- Subtle border -->
+  <rect x="16" y="16" width="480" height="480" rx="96" ry="96"
+        fill="none" stroke="#00D4AA" stroke-opacity="0.15" stroke-width="2"/>
+
+  <!-- === Capability ring (8 segments = 8 domains) === -->
+  <!-- Outer ring representing the 8 capability domains -->
+  <g transform="translate(256, 240)" filter="url(#outerGlow)">
+    <!-- Ring background -->
+    <circle cx="0" cy="0" r="155" fill="none" stroke="#00D4AA" stroke-opacity="0.08" stroke-width="28"/>
+
+    <!-- 8 arc segments for 8 domains, each 38 degrees with 7 degree gaps -->
+    <!-- security -->
+    <path d="M 0,-155 A 155,155 0 0,1 96.7,-121.1"
+          fill="none" stroke="#00D4AA" stroke-width="6" stroke-linecap="round" stroke-opacity="0.85"/>
+    <!-- perf -->
+    <path d="M 115.5,-103.7 A 155,155 0 0,1 153.3,-20.2"
+          fill="none" stroke="#00CCBB" stroke-width="6" stroke-linecap="round" stroke-opacity="0.75"/>
+    <!-- fs -->
+    <path d="M 151.5,30.2 A 155,155 0 0,1 109.6,109.6"
+          fill="none" stroke="#00C4CC" stroke-width="6" stroke-linecap="round" stroke-opacity="0.85"/>
+    <!-- dist -->
+    <path d="M 86.7,128.6 A 155,155 0 0,1 -10.1,154.7"
+          fill="none" stroke="#00BBDD" stroke-width="6" stroke-linecap="round" stroke-opacity="0.75"/>
+    <!-- obs -->
+    <path d="M -40.2,149.7 A 155,155 0 0,1 -121.1,96.7"
+          fill="none" stroke="#00B0E8" stroke-width="6" stroke-linecap="round" stroke-opacity="0.65"/>
+    <!-- res -->
+    <path d="M -134.6,76.2 A 155,155 0 0,1 -154.7,-10.1"
+          fill="none" stroke="#00A5F0" stroke-width="6" stroke-linecap="round" stroke-opacity="0.55"/>
+    <!-- stream -->
+    <path d="M -149.7,-40.2 A 155,155 0 0,1 -109.6,-109.6"
+          fill="none" stroke="#009AF5" stroke-width="6" stroke-linecap="round" stroke-opacity="0.65"/>
+    <!-- content -->
+    <path d="M -86.7,-128.6 A 155,155 0 0,1 -20.2,-153.3"
+          fill="none" stroke="#0090FA" stroke-width="6" stroke-linecap="round" stroke-opacity="0.55"/>
+
+    <!-- 8 capability nodes on the ring -->
+    <g filter="url(#nodeGlow)">
+      <!-- security (top) -->
+      <circle cx="0" cy="-155" r="5" fill="#00D4AA"/>
+      <!-- perf (top-right) -->
+      <circle cx="135" cy="-77" r="5" fill="#00CCBB"/>
+      <!-- fs (right) -->
+      <circle cx="135" cy="77" r="5" fill="#00C4CC"/>
+      <!-- dist (bottom-right) -->
+      <circle cx="0" cy="155" r="5" fill="#00BBDD"/>
+      <!-- obs (bottom-left) -->
+      <circle cx="-135" cy="77" r="5" fill="#00B0E8"/>
+      <!-- res (left) -->
+      <circle cx="-155" cy="0" r="5" fill="#00A5F0"/>
+      <!-- stream (top-left) -->
+      <circle cx="-135" cy="-77" r="5" fill="#009AF5"/>
+      <!-- content (between top and top-left) -->
+      <circle cx="-55" cy="-145" r="5" fill="#0090FA"/>
+    </g>
+
+    <!-- Connection lines from center to nodes (protocol channels) -->
+    <g stroke="#00D4AA" stroke-opacity="0.12" stroke-width="1.5">
+      <line x1="0" y1="0" x2="0" y2="-155"/>
+      <line x1="0" y1="0" x2="135" y2="-77"/>
+      <line x1="0" y1="0" x2="135" y2="77"/>
+      <line x1="0" y1="0" x2="0" y2="155"/>
+      <line x1="0" y1="0" x2="-135" y2="77"/>
+      <line x1="0" y1="0" x2="-155" y2="0"/>
+      <line x1="0" y1="0" x2="-135" y2="-77"/>
+      <line x1="0" y1="0" x2="-55" y2="-145"/>
+    </g>
+  </g>
+
+  <!-- === Central "9P" text === -->
+  <g transform="translate(256, 240)">
+    <!-- "9P" main text -->
+    <text x="-2" y="18" text-anchor="middle"
+          font-family="'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+          font-size="120" font-weight="800" letter-spacing="-4"
+          fill="white">9P</text>
+  </g>
+
+  <!-- === ".N" badge === -->
+  <g transform="translate(256, 240)">
+    <!-- Badge background pill -->
+    <rect x="55" y="30" width="72" height="40" rx="20" ry="20"
+          fill="url(#accentGrad)" opacity="0.95"/>
+    <!-- ".N" text -->
+    <text x="91" y="58" text-anchor="middle"
+          font-family="'SF Pro Display', 'Inter', 'Helvetica Neue', Arial, sans-serif"
+          font-size="28" font-weight="700" letter-spacing="-1"
+          fill="#0F2B46">.N</text>
+  </g>
+
+  <!-- === Subtitle: protocol version hint === -->
+  <text x="256" y="410" text-anchor="middle"
+        font-family="'SF Mono', 'JetBrains Mono', 'Fira Code', monospace"
+        font-size="22" font-weight="500" letter-spacing="6"
+        fill="#00D4AA" opacity="0.6">PROTOCOL</text>
+
+  <!-- === Bottom decorative line === -->
+  <line x1="176" y1="430" x2="336" y2="430"
+        stroke="url(#accentGrad)" stroke-width="1.5" stroke-opacity="0.3" stroke-linecap="round"/>
+</svg>
