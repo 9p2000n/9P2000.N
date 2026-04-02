@@ -23,7 +23,7 @@
 
 [9P](https://plan9.io) is a network protocol from Plan 9 for accessing remote files, devices, and services. Linux ships with a built-in client ([v9fs](https://docs.kernel.org/filesystems/9p.html)), and it is widely used in QEMU/KVM, WSL2, and container runtimes.
 
-The existing variants (9P2000, 9P2000.u, 9P2000.L) each add features as monolithic dialects &mdash; you negotiate one version string and get everything or nothing. **9P2000.N** (Next/Negotiated) changes this with a **composable capability negotiation framework**: implementations pick and choose from independently negotiable extensions across 9 domains, without an all-or-nothing tradeoff.
+The existing variants (9P2000, 9P2000.u) each add features as monolithic dialects &mdash; you negotiate one version string and get everything or nothing. **9P2000.N** (Next/Negotiated) changes this with a **composable capability negotiation framework**: implementations pick and choose from independently negotiable extensions across 9 domains, without an all-or-nothing tradeoff.
 
 ## Protocol at a Glance
 
@@ -35,7 +35,7 @@ The existing variants (9P2000, 9P2000.u, 9P2000.L) each add features as monolith
 | **Composable capabilities** | `Tcaps/Rcaps` replaces monolithic version strings; each feature is independently negotiable |
 | **Server push** | Three message types use `tag = P9_NOTAG (0xFFFF)` for unsolicited server-to-client notifications |
 | **Compound operations** | `Tcompound` packs N sub-ops into 1 round-trip (inspired by NFS4 COMPOUND) |
-| **Graceful fallback** | If the server doesn't support `9P2000.N`, it falls back to `9P2000.L` or lower |
+| **No downgrade** | 9P2000.N requires both sides to support the protocol; no fallback to older versions |
 | **Purely additive** | No existing message semantics are modified; new types use previously unused type numbers |
 
 ### 9 Extension Domains
@@ -62,8 +62,8 @@ Unlike prior 9P variants that negotiate a single version string, 9P2000.N uses a
 ```
 Client                                Server
   |                                     |
-  |--- Tversion "9P2000.N" msize  ----->|
-  |<-- Rversion "9P2000.N" msize  ------|
+  |--- Tversion "9P2000.N" msize ------>|
+  |<-- Rversion "9P2000.N" msize -------|
   |                                     |
   |--- Tcaps [security.tls,            -|    client lists desired capabilities
   |           perf.compound,            |
@@ -94,7 +94,7 @@ Clients that haven't negotiated the corresponding capability never receive these
 `Tcompound` packs multiple sub-operations into a single round-trip. The magic fid `0xFFFFFFFE` (`P9N_PREVFID`) refers to the fid returned by the preceding sub-op, enabling chained operations without advance fid knowledge:
 
 ```
-Old way (9P2000.L): 4 RTTs          New way (9P2000.N): 1 RTT
+Old way (9P2000): 4 RTTs             New way (9P2000.N): 1 RTT
   Client       Server                 Client          Server
     |--Twalk---->|  RTT1                 |--Tcompound-->|  RTT1
     |<-Rwalk-----|                       |  [Twalk,     |
@@ -147,18 +147,18 @@ Client                                  Server
 
 ## Comparison with Existing 9P Variants
 
-| Feature | 9P2000 | 9P2000.u | 9P2000.L | **9P2000.N** |
-|---------|--------|----------|----------|------------|
-| Message type pairs | 14 | 14 | ~25 | **46** |
-| Feature negotiation | single string | single string | single string | **composable capabilities** |
-| Server push | no | no | no | **yes (P9_NOTAG)** |
-| Encryption | no | no | no | **STARTTLS** |
-| Cache coherence | no | no | no | **leases/delegations** |
-| Workload identity | no | no | no | **SPIFFE** |
-| Compound operations | no | no | no | **Tcompound** |
-| Change notifications | no | no | no | **watch/notify** |
-| Compression | no | no | no | **lz4/zstd/snappy** |
-| Server-side copy | no | no | no | **copy_file_range** |
+| Feature | 9P2000 | 9P2000.u | **9P2000.N** |
+|---------|--------|----------|------------|
+| Message type pairs | 14 | 14 | **46** |
+| Feature negotiation | single string | single string | **composable capabilities** |
+| Server push | no | no | **yes (P9_NOTAG)** |
+| Encryption | no | no | **STARTTLS** |
+| Cache coherence | no | no | **leases/delegations** |
+| Workload identity | no | no | **SPIFFE** |
+| Compound operations | no | no | **Tcompound** |
+| Change notifications | no | no | **watch/notify** |
+| Compression | no | no | **lz4/zstd/snappy** |
+| Server-side copy | no | no | **copy_file_range** |
 
 ## Repository Structure
 
@@ -188,7 +188,7 @@ assets/
   9pN-icon.svg                   Project icon
   9pN-favicon.svg                Favicon
   9P2000N-presentation-en.html   Conference slides (English, 17 slides)
-  9P2000N-presentation-cn.html   Conference slides (Chinese, 17 slides)
+  9P2000N-presentation-cn.html      Conference slides (Chinese, 17 slides)
 ```
 
 ## Specification
@@ -200,7 +200,7 @@ assets/
 
 ## Reference Implementation
 
-Two reference implementations demonstrate the exact wire format for all 46 message type pairs:
+Three reference implementations demonstrate the exact wire format for all 51 message type pairs:
 
 | Language | Directory | Tests | Build |
 |----------|-----------|-------|-------|
@@ -228,8 +228,7 @@ Open in any browser &mdash; supports keyboard navigation, touch swipe, and a pro
 - [x] Performance: compound operations
 - [x] Filesystem: watch/notify with server push
 - [x] Distributed: leases/delegations with server push, session resumption
-- [x] Full protocol codec for all 46 message types
-- [x] C reference implementation with 36 passing tests
+- [x] Full protocol codec for all 51 message types
 - [x] Normative specification + RFC-style wire format document
 
 ### Phase 2 &mdash; Transport &amp; Ecosystem

@@ -78,10 +78,10 @@ const (
 
 // Message types — performance.
 const (
-	Tcompound MsgType = 156
-	Rcompound MsgType = 157
-	Tcompress MsgType = 158
-	Rcompress MsgType = 159
+	Tcompound  MsgType = 156
+	Rcompound  MsgType = 157
+	Tcompress  MsgType = 158
+	Rcompress  MsgType = 159
 	Tcopyrange MsgType = 160
 	Rcopyrange MsgType = 161
 	Tallocate  MsgType = 162
@@ -94,20 +94,20 @@ const (
 
 // Message types — filesystem.
 const (
-	Twatch    MsgType = 180
-	Rwatch    MsgType = 181
-	Tunwatch  MsgType = 182
-	Runwatch  MsgType = 183
-	Tnotify   MsgType = 184 // reserved
-	Rnotify   MsgType = 185 // server-push
-	Tgetacl   MsgType = 186
-	Rgetacl   MsgType = 187
-	Tsetacl   MsgType = 188
-	Rsetacl   MsgType = 189
-	Tsnapshot MsgType = 190
-	Rsnapshot MsgType = 191
-	Tclone    MsgType = 192
-	Rclone    MsgType = 193
+	Twatch     MsgType = 180
+	Rwatch     MsgType = 181
+	Tunwatch   MsgType = 182
+	Runwatch   MsgType = 183
+	Tnotify    MsgType = 184 // reserved
+	Rnotify    MsgType = 185 // server-push
+	Tgetacl    MsgType = 186
+	Rgetacl    MsgType = 187
+	Tsetacl    MsgType = 188
+	Rsetacl    MsgType = 189
+	Tsnapshot  MsgType = 190
+	Rsnapshot  MsgType = 191
+	Tclone     MsgType = 192
+	Rclone     MsgType = 193
 	Txattrget  MsgType = 194
 	Rxattrget  MsgType = 195
 	Txattrset  MsgType = 196
