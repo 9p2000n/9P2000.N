@@ -2,7 +2,6 @@
 
 // Protocol versions
 pub const VERSION: &str = "9P2000.N";
-pub const VERSION_L: &str = "9P2000.L";
 
 // Magic numbers
 pub const NO_TAG: u16 = 0xFFFF;

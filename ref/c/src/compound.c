@@ -26,7 +26,7 @@
 #include <errno.h>
 #include <stdarg.h>
 
-/* 9P2000/9P2000.L message types we reference in sub-ops */
+/* 9P2000 base message types we reference in sub-ops */
 #define P9_TWALK    110
 #define P9_TLOPEN   12
 #define P9_TREAD    116

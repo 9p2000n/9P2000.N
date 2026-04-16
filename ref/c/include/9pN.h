@@ -2,7 +2,7 @@
 /*
  * 9P2000.N protocol definitions -- Next-generation 9P extensions.
  *
- * This header extends the base 9P2000/9P2000.L protocol with modular,
+ * This header extends the base 9P2000 protocol with modular,
  * capability-negotiated extensions across 8 domains: security, performance,
  * filesystem semantics, distributed systems, observability, resource
  * management, streaming/async, and content-awareness.
@@ -28,7 +28,6 @@ extern "C" {
 #define P9N_VERSION         "9P2000.N"
 #define P9N_VERSION_BASE    "9P2000"
 #define P9N_VERSION_U       "9P2000.u"
-#define P9N_VERSION_L       "9P2000.L"
 
 /* Standard 9P magic numbers (duplicated for standalone use) */
 #define P9_NOTAG            ((uint16_t)0xFFFF)

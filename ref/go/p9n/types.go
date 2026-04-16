@@ -13,7 +13,6 @@ const (
 	Version     = "9P2000.N"
 	VersionBase = "9P2000"
 	VersionU    = "9P2000.u"
-	VersionL    = "9P2000.L"
 )
 
 // Magic numbers.

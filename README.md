@@ -53,7 +53,7 @@ The existing variants (9P2000, 9P2000.u) each add features as monolithic dialect
 | Content | `content.*` | 250-253 | Server-side search, content hashing |
 | Transport | `transport.*` | 146-155 | CXL memory mapping & coherence, QUIC multistream, RDMA tokens & notification ring |
 
-**51 T/R message pairs** &middot; 102 type slots used &middot; 96 reserved for future growth.
+**46 T/R message pairs** &middot; 102 type slots used &middot; 96 reserved for future growth.
 
 ### Capability Negotiation
 
@@ -200,7 +200,7 @@ assets/
 
 ## Reference Implementation
 
-Three reference implementations demonstrate the exact wire format for all 51 message type pairs:
+Three reference implementations demonstrate the exact wire format for all 46 message type pairs:
 
 | Language | Directory | Tests | Build |
 |----------|-----------|-------|-------|
@@ -228,7 +228,8 @@ Open in any browser &mdash; supports keyboard navigation, touch swipe, and a pro
 - [x] Performance: compound operations
 - [x] Filesystem: watch/notify with server push
 - [x] Distributed: leases/delegations with server push, session resumption
-- [x] Full protocol codec for all 51 message types
+- [x] Full protocol codec for all 46 message types
+- [x] C reference implementation with 36 passing tests
 - [x] Normative specification + RFC-style wire format document
 
 ### Phase 2 &mdash; Transport &amp; Ecosystem
